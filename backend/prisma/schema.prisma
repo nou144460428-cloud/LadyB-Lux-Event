@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+enum Role {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+enum VendorCategory {
+  PLANNER
+  DECORATION
+  CAKE
+  SMALL_CHOPS
+}
+
+enum ProductType {
+  SERVICE
+  RENTAL
+  FOOD
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+}
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(CUSTOMER)
+
+  vendor    Vendor?
+  events    Event[]
+  orders    Order[]
+  reviews   Review[]
+
+  createdAt DateTime @default(now())
+}
+
+model Vendor {
+  id          String         @id @default(uuid())
+  userId      String         @unique
+  category    VendorCategory
+  businessName String
+  location    String
+  verified    Boolean        @default(false)
+
+  user        User           @relation(fields: [userId], references: [id])
+  products    Product[]
+  reviews     Review[]
+
+  createdAt   DateTime       @default(now())
+}
+model Product {
+  id          String      @id @default(uuid())
+  vendorId    String
+  name        String
+  description String
+  type        ProductType
+  price       Float
+  quantity    Int?        // for rentals & food
+  imageUrl    String?
+
+  vendor      Vendor      @relation(fields: [vendorId], references: [id])
+  orderItems  OrderItem[]
+
+  createdAt   DateTime    @default(now())
+}
+model Event {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  eventDate DateTime
+  location  String
+
+  user      User     @relation(fields: [userId], references: [id])
+  orders    Order[]
+
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  userId      String
+  eventId     String
+  totalAmount Float
+  status      OrderStatus @default(PENDING)
+
+  user        User        @relation(fields: [userId], references: [id])
+  event       Event       @relation(fields: [eventId], references: [id])
+  items       OrderItem[]
+  payment     Payment?
+
+  createdAt   DateTime    @default(now())
+}
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId  String
+  productId String
+  quantity Int
+  price    Float
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+}
+model Payment {
+  id        String        @id @default(uuid())
+  orderId  String        @unique
+  provider  String
+  status    PaymentStatus
+  reference String?
+
+  order     Order         @relation(fields: [orderId], references: [id])
+  createdAt DateTime      @default(now())
+}
+model Review {
+  id        String   @id @default(uuid())
+  vendorId String
+  userId   String
+  rating   Int
+  comment  String?
+
+  vendor   Vendor   @relation(fields: [vendorId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
