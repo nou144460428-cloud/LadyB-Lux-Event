@@ -24,8 +24,11 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
-      NODE_ENV: production
+      DATABASE_URL: postgresql://user:password@localhost:5432/ladyb_lux_event
+      JWT_SECRET: your_super_secret_jwt_key_here_change_in_production
+      PAYSTACK_SECRET: sk_live_your_paystack_secret_key
+      PAYSTACK_PUBLIC_KEY: pk_live_your_paystack_public_key
+      NODE_ENV: development
     ports:
       - "3001:3001"
     volumes:
