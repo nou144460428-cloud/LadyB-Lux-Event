@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}";
+self.__REACT_LOADABLE_MANIFEST='{"components/MonitoringInit.tsx -> @sentry/nextjs":{"id":2742,"files":["static/chunks/52774a7f.69cbf5a5e87c471e.js","static/chunks/950.1f970baa489bc9fe.js"]}}';

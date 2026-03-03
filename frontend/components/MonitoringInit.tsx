@@ -11,9 +11,7 @@ export default function MonitoringInit() {
 
     (async () => {
       try {
-        // Optional runtime dependency: app still works if package is not installed.
-        const sentryModuleName = '@sentry/nextjs';
-        const sentry = (await import(sentryModuleName)) as {
+        const sentry = (await import('@sentry/nextjs')) as {
           init?: (options: Record<string, unknown>) => void;
         };
 
