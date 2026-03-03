@@ -40,11 +40,12 @@ export default function StaffDashboard() {
     },
   });
 
+  const autoMaterialVendor =
+    vendors.find((vendor: any) => vendor.category === 'DECORATION') || vendors[0];
+
   const createMaterial = useMutation({
     mutationFn: async () => {
-      const decorationVendorId =
-        vendors.find((vendor: any) => vendor.category === 'DECORATION')?.id ||
-        vendors[0]?.id;
+      const decorationVendorId = autoMaterialVendor?.id;
       if (!decorationVendorId) {
         throw new Error('No vendor profile found for restocking.');
       }
@@ -140,11 +141,25 @@ export default function StaffDashboard() {
             />
             <button
               onClick={() => createMaterial.mutate()}
-              disabled={createMaterial.isPending || !materialForm.name.trim()}
+              disabled={
+                createMaterial.isPending ||
+                !materialForm.name.trim() ||
+                !autoMaterialVendor
+              }
               className="rounded-full border border-[#d6b57c] bg-[#d6b57c] px-5 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#171108] transition hover:bg-[#ebcf9f] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {createMaterial.isPending ? 'Restocking...' : 'Restock Material'}
             </button>
+            {!autoMaterialVendor && (
+              <p className="text-xs text-amber-300">
+                No vendor profile exists yet. Create at least one vendor before restocking.
+              </p>
+            )}
+            {createMaterial.isError && (
+              <p className="text-xs text-rose-300">
+                {(createMaterial.error as any)?.message || 'Restock failed. Try again.'}
+              </p>
+            )}
           </div>
         </div>
 
