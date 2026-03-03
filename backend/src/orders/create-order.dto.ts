@@ -20,12 +20,17 @@ export class CreateOrderItemDto {
 
   @IsOptional()
   @IsDateString()
-  deliveryDate?: string;  // for food items
+  deliveryDate?: string; // for food items
 }
 
 export class CreateOrderDto {
+  @IsOptional()
   @IsString()
-  eventId: string;
+  eventId?: string;
+
+  @IsOptional()
+  @IsString()
+  idempotencyKey?: string;
 
   items: CreateOrderItemDto[];
 }

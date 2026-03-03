@@ -1,0 +1,21 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/_global-error/page": "/_global-error",
+  "/auth/admin-login/page": "/auth/admin-login",
+  "/auth/admin-register/page": "/auth/admin-register",
+  "/auth/login/page": "/auth/login",
+  "/auth/register/page": "/auth/register",
+  "/cart/page": "/cart",
+  "/checkout/page": "/checkout",
+  "/checkout/success/page": "/checkout/success",
+  "/dashboard/admin/page": "/dashboard/admin",
+  "/dashboard/customer/page": "/dashboard/customer",
+  "/dashboard/staff/page": "/dashboard/staff",
+  "/dashboard/vendor/page": "/dashboard/vendor",
+  "/event/create/page": "/event/create",
+  "/page": "/",
+  "/rentals/cart/page": "/rentals/cart",
+  "/rentals/checkout/page": "/rentals/checkout",
+  "/samples/page": "/samples",
+  "/vendors/[category]/page": "/vendors/[category]"
+}

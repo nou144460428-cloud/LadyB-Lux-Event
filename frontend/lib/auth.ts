@@ -2,7 +2,8 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'CUSTOMER' | 'VENDOR' | 'ADMIN';
+  role: 'CUSTOMER' | 'VENDOR' | 'STAFF' | 'ADMIN';
+  accountType?: 'CUSTOMER' | 'DECORATOR' | 'VENDOR' | 'STAFF' | 'ADMIN';
 }
 
 export interface LoginCredentials {
@@ -15,6 +16,11 @@ export interface RegisterCredentials {
   email: string;
   password: string;
   role?: 'CUSTOMER' | 'VENDOR';
+  accountType?: 'CUSTOMER' | 'DECORATOR' | 'VENDOR';
+  phone?: string;
+  nextOfKinName?: string;
+  nextOfKinPhone?: string;
+  nextOfKinRelationship?: string;
 }
 
 export const getAuthUser = (): AuthUser | null => {
@@ -33,6 +39,10 @@ export const setAuthData = (user: AuthUser, token: string) => {
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('token', token);
   }
+};
+
+export const isDecoratorAccount = (user: AuthUser | null): boolean => {
+  return Boolean(user && user.role === 'VENDOR' && user.accountType === 'DECORATOR');
 };
 
 export const clearAuthData = () => {

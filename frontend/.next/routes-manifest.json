@@ -1,0 +1,161 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/vendors/[category]",
+      "regex": "^/vendors/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPcategory": "nxtPcategory"
+      },
+      "namedRegex": "^/vendors/(?<nxtPcategory>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/auth/admin-login",
+      "regex": "^/auth/admin\\-login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/admin\\-login(?:/)?$"
+    },
+    {
+      "page": "/auth/admin-register",
+      "regex": "^/auth/admin\\-register(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/admin\\-register(?:/)?$"
+    },
+    {
+      "page": "/auth/login",
+      "regex": "^/auth/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/login(?:/)?$"
+    },
+    {
+      "page": "/auth/register",
+      "regex": "^/auth/register(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/register(?:/)?$"
+    },
+    {
+      "page": "/cart",
+      "regex": "^/cart(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cart(?:/)?$"
+    },
+    {
+      "page": "/checkout",
+      "regex": "^/checkout(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/checkout(?:/)?$"
+    },
+    {
+      "page": "/checkout/success",
+      "regex": "^/checkout/success(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/checkout/success(?:/)?$"
+    },
+    {
+      "page": "/dashboard/admin",
+      "regex": "^/dashboard/admin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/admin(?:/)?$"
+    },
+    {
+      "page": "/dashboard/customer",
+      "regex": "^/dashboard/customer(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/customer(?:/)?$"
+    },
+    {
+      "page": "/dashboard/staff",
+      "regex": "^/dashboard/staff(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/staff(?:/)?$"
+    },
+    {
+      "page": "/dashboard/vendor",
+      "regex": "^/dashboard/vendor(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/vendor(?:/)?$"
+    },
+    {
+      "page": "/event/create",
+      "regex": "^/event/create(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/event/create(?:/)?$"
+    },
+    {
+      "page": "/rentals/cart",
+      "regex": "^/rentals/cart(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/rentals/cart(?:/)?$"
+    },
+    {
+      "page": "/rentals/checkout",
+      "regex": "^/rentals/checkout(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/rentals/checkout(?:/)?$"
+    },
+    {
+      "page": "/samples",
+      "regex": "^/samples(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/samples(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

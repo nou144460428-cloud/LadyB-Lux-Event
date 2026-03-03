@@ -1,19 +1,44 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
-import { ProductType, OrderStatus } from '../../generated/prisma/enums';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
+import { createPrismaClient } from '../prisma/prisma-client-options';
+import { ProductType, OrderStatus } from '@prisma/client';
 import { ProductsService } from '../products/products.service';
 import { CreateOrderDto } from './create-order.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class OrdersService {
-  private prisma: any = new (PrismaClient as any)();
+  private prisma: any = createPrismaClient() as any;
+  private readonly logger = new Logger(OrdersService.name);
+  private static readonly PLATFORM_COMMISSION_RATE = 0.15;
 
-  constructor(private productsService: ProductsService) {}
+  constructor(
+    private productsService: ProductsService,
+    private emailService: EmailService,
+  ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
+    const effectiveEventId = await this.ensureEventForOrder(userId, dto.eventId);
+    const requestedSignature = this.buildOrderItemsSignature(dto.items);
+
+    // Idempotency guard: if an equivalent pending/paid order was just created, reuse it.
+    const existingOrder = await this.findRecentEquivalentOrder(
+      userId,
+      effectiveEventId,
+      requestedSignature,
+    );
+    if (existingOrder) {
+      return existingOrder;
+    }
+
     // Verify event exists
     const event = await this.prisma.event.findUnique({
-      where: { id: dto.eventId },
+      where: { id: effectiveEventId },
     });
 
     if (!event) {
@@ -67,14 +92,32 @@ export class OrdersService {
             );
           }
         }
-      } else {
-        // For rentals & services, check availability with date range
+      } else if (product.type === ProductType.SERVICE) {
+        // Services still require a schedule window at order time.
         if (!item.startDate || !item.endDate) {
           throw new BadRequestException(
             `${product.name} requires startDate and endDate`,
           );
         }
 
+        const available = await this.productsService.checkAvailability(
+          product.id,
+          item.startDate,
+          item.endDate,
+          item.quantity,
+        );
+
+        if (!available) {
+          throw new BadRequestException(
+            `${product.name} not available for the requested dates`,
+          );
+        }
+      } else if (
+        product.type === ProductType.RENTAL &&
+        item.startDate &&
+        item.endDate
+      ) {
+        // Rental windows can be assigned later by stock keeper admin.
         const available = await this.productsService.checkAvailability(
           product.id,
           item.startDate,
@@ -96,7 +139,7 @@ export class OrdersService {
     return this.prisma.order.create({
       data: {
         userId,
-        eventId: dto.eventId,
+        eventId: effectiveEventId,
         totalAmount: total,
         items: {
           create: dto.items.map((item) => ({
@@ -105,7 +148,9 @@ export class OrdersService {
             price: item.price,
             startDate: item.startDate ? new Date(item.startDate) : null,
             endDate: item.endDate ? new Date(item.endDate) : null,
-            deliveryDate: item.deliveryDate ? new Date(item.deliveryDate) : null,
+            deliveryDate: item.deliveryDate
+              ? new Date(item.deliveryDate)
+              : null,
           })),
         },
       },
@@ -117,10 +162,79 @@ export class OrdersService {
     });
   }
 
+  private async findRecentEquivalentOrder(
+    userId: string,
+    eventId: string,
+    signature: string,
+  ) {
+    const windowStart = new Date(Date.now() - 30 * 60 * 1000);
+    const recentOrders = await this.prisma.order.findMany({
+      where: {
+        userId,
+        eventId,
+        status: { in: [OrderStatus.PENDING, OrderStatus.PAID] },
+        createdAt: { gte: windowStart },
+      },
+      include: {
+        items: true,
+        user: true,
+        event: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    return (
+      recentOrders.find(
+        (order: any) => this.buildOrderItemsSignature(order.items) === signature,
+      ) || null
+    );
+  }
+
+  private buildOrderItemsSignature(items: any[]) {
+    return items
+      .map((item: any) =>
+        [
+          item.productId,
+          Number(item.quantity || 0),
+          Number(item.price || 0),
+          item.startDate ? new Date(item.startDate).toISOString() : '',
+          item.endDate ? new Date(item.endDate).toISOString() : '',
+          item.deliveryDate ? new Date(item.deliveryDate).toISOString() : '',
+        ].join('|'),
+      )
+      .sort()
+      .join('::');
+  }
+
+  private async ensureEventForOrder(userId: string, eventId?: string) {
+    if (eventId) {
+      return eventId;
+    }
+
+    const now = new Date();
+    const event = await this.prisma.event.create({
+      data: {
+        userId,
+        title: `Rental Request - ${now.toISOString().slice(0, 10)}`,
+        eventDate: now,
+        location: 'To be assigned by stock keeper admin',
+      },
+    });
+
+    return event.id;
+  }
+
   async confirmOrder(orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
     });
 
     if (!order) {
@@ -141,12 +255,43 @@ export class OrdersService {
       }
     }
 
+    // Record commission and vendor earnings per order item (C8)
+    const commissionLogs = order.items.map((item) => {
+      const grossAmount = item.price * item.quantity;
+      const commissionAmount = Number(
+        (grossAmount * OrdersService.PLATFORM_COMMISSION_RATE).toFixed(2),
+      );
+      const vendorEarnings = Number((grossAmount - commissionAmount).toFixed(2));
+
+      return {
+        orderId: order.id,
+        orderItemId: item.id,
+        vendorId: item.product.vendorId,
+        grossAmount,
+        commissionAmount,
+        amount: vendorEarnings,
+        status: 'PENDING_PAYOUT',
+      };
+    });
+
+    if (commissionLogs.length > 0) {
+      await this.prisma.commissionLog.createMany({
+        data: commissionLogs,
+        skipDuplicates: true,
+      });
+    }
+
     // Update order status to PAID
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: OrderStatus.PAID },
       include: { items: true, payment: true },
     });
+
+    // C8: notify involved vendors about the new paid order
+    await this.notifyVendor(orderId);
+
+    return updatedOrder;
   }
 
   async getOrder(orderId: string) {
@@ -180,7 +325,7 @@ export class OrdersService {
   // C8: ORDER STATUS LIFECYCLE with role-based authorization
   async updateOrderStatus(
     orderId: string,
-    status: string,
+    status: OrderStatus,
     userId: string,
     userRole: string,
   ) {
@@ -194,10 +339,7 @@ export class OrdersService {
     }
 
     // Validate status transition
-    const validTransition = this.isValidStatusTransition(
-      order.status,
-      status,
-    );
+    const validTransition = this.isValidStatusTransition(order.status, status);
     if (!validTransition) {
       throw new BadRequestException(
         `Cannot transition from ${order.status} to ${status}`,
@@ -208,14 +350,10 @@ export class OrdersService {
     if (status === OrderStatus.CANCELLED) {
       // C8: Only admin can cancel after payment
       if (order.status !== OrderStatus.PENDING && userRole !== 'ADMIN') {
-        throw new ForbiddenException(
-          'Only admins can cancel paid orders',
-        );
+        throw new ForbiddenException('Only admins can cancel paid orders');
       }
       if (userRole !== 'ADMIN') {
-        throw new ForbiddenException(
-          'Only admins can cancel orders',
-        );
+        throw new ForbiddenException('Only admins can cancel orders');
       }
     } else if (status === OrderStatus.IN_PROGRESS) {
       // C8: Vendor can mark IN_PROGRESS
@@ -236,15 +374,12 @@ export class OrdersService {
   }
 
   private isValidStatusTransition(
-    currentStatus: string,
-    newStatus: string,
+    currentStatus: OrderStatus,
+    newStatus: OrderStatus,
   ): boolean {
-    const validTransitions: { [key: string]: string[] } = {
+    const validTransitions: Record<OrderStatus, OrderStatus[]> = {
       [OrderStatus.PENDING]: [OrderStatus.PAID, OrderStatus.CANCELLED],
-      [OrderStatus.PAID]: [
-        OrderStatus.IN_PROGRESS,
-        OrderStatus.CANCELLED,
-      ],
+      [OrderStatus.PAID]: [OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED],
       [OrderStatus.IN_PROGRESS]: [OrderStatus.COMPLETED],
       [OrderStatus.COMPLETED]: [],
       [OrderStatus.CANCELLED]: [],
@@ -303,6 +438,66 @@ export class OrdersService {
         payment: true,
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // C8: Notify all vendors attached to an order
+  async notifyVendor(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        event: true,
+        items: {
+          include: {
+            product: {
+              include: {
+                vendor: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const uniqueVendors = new Map<string, { email: string; businessName: string }>();
+    for (const item of order.items) {
+      const vendor = item.product?.vendor;
+      const vendorUser = vendor?.user;
+      if (!vendor?.id || !vendorUser?.email) {
+        continue;
+      }
+
+      uniqueVendors.set(vendor.id, {
+        email: vendorUser.email,
+        businessName: vendor.businessName,
+      });
+    }
+
+    const emailJobs = Array.from(uniqueVendors.values()).map((vendor) =>
+      this.emailService.sendVendorNewOrder(
+        vendor.email,
+        vendor.businessName,
+        order.id,
+        order.event.title,
+        order.totalAmount,
+      ),
+    );
+
+    const results = await Promise.allSettled(emailJobs);
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        this.logger.error(
+          `Failed to send vendor order email (${index + 1}/${results.length}) for order ${orderId}`,
+        );
+      }
     });
   }
 }

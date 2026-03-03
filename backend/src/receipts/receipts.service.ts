@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
+import { createPrismaClient } from '../prisma/prisma-client-options';
 
 @Injectable()
 export class ReceiptsService {
-  private prisma: any = new (PrismaClient as any)();
+  private prisma: any = createPrismaClient() as any;
 
   async generateReceipt(orderId: string) {
     const order = await this.prisma.order.findUnique({
@@ -17,7 +17,7 @@ export class ReceiptsService {
 
     if (!order) throw new NotFoundException('Order not found');
 
-    const items = order.items.map(item => ({
+    const items = order.items.map((item) => ({
       productName: item.product.name,
       quantity: item.quantity,
       price: item.price,
@@ -35,7 +35,9 @@ export class ReceiptsService {
   }
 
   async getReceipt(receiptId: string) {
-    const receipt = await this.prisma.receipt.findUnique({ where: { id: receiptId } });
+    const receipt = await this.prisma.receipt.findUnique({
+      where: { id: receiptId },
+    });
     if (!receipt) throw new NotFoundException('Receipt not found');
     return receipt;
   }

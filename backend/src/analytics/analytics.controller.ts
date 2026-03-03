@@ -3,16 +3,20 @@ import { AnalyticsService } from './analytics.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
-import { Role } from '../../generated/prisma/enums';
+import { Role } from '@prisma/client';
 
 @Controller('analytics')
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, RolesGuard)
 export class AnalyticsController {
   constructor(private analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
   @Roles(Role.VENDOR, Role.ADMIN)
-  async getDashboard(@Req() req: any, @Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+  async getDashboard(
+    @Req() req: any,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
     const vendorId = req.user.role === 'VENDOR' ? req.user.vendorId : undefined;
     return this.analyticsService.getDashboardMetrics(
       vendorId,
@@ -36,7 +40,9 @@ export class AnalyticsController {
   @Get('product-popularity')
   @Roles(Role.ADMIN)
   async getProductPopularity(@Query('limit') limit?: string) {
-    return this.analyticsService.getProductPopularity(limit ? parseInt(limit) : 10);
+    return this.analyticsService.getProductPopularity(
+      limit ? parseInt(limit) : 10,
+    );
   }
 
   @Get('category-metrics')

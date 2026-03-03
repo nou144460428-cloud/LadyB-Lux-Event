@@ -1,5 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { SearchService } from './search.service';
+import { ProductType, VendorCategory } from '@prisma/client';
 
 @Controller('search')
 export class SearchController {
@@ -16,10 +17,10 @@ export class SearchController {
   ) {
     return this.searchService.searchProducts(
       query,
-      type,
+      type as ProductType | undefined,
       minPrice ? parseFloat(minPrice) : undefined,
       maxPrice ? parseFloat(maxPrice) : undefined,
-      category,
+      category as VendorCategory | undefined,
       vendorId,
     );
   }
@@ -30,7 +31,11 @@ export class SearchController {
     @Query('category') category?: string,
     @Query('verified') verified?: string,
   ) {
-    return this.searchService.searchVendors(query, category, verified === 'true');
+    return this.searchService.searchVendors(
+      query,
+      category as VendorCategory | undefined,
+      verified === 'true',
+    );
   }
 
   @Get('events')

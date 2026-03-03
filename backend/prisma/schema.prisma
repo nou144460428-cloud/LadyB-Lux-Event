@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -15,6 +14,15 @@ datasource db {
 enum Role {
   CUSTOMER
   VENDOR
+  STAFF
+  ADMIN
+}
+
+enum AccountType {
+  CUSTOMER
+  DECORATOR
+  VENDOR
+  STAFF
   ADMIN
 }
 
@@ -44,17 +52,30 @@ enum PaymentStatus {
   SUCCESS
   FAILED
 }
+
+enum CommissionStatus {
+  PENDING_PAYOUT
+  PAID_OUT
+  FAILED
+}
 model User {
   id        String   @id @default(uuid())
   name      String
   email     String   @unique
   password  String
   role      Role     @default(CUSTOMER)
+  accountType AccountType @default(CUSTOMER)
+  phone       String?
+  nextOfKinName String?
+  nextOfKinPhone String?
+  nextOfKinRelationship String?
 
   vendor    Vendor?
   events    Event[]
   orders    Order[]
   reviews   Review[]
+  notifications Notification[]
+  receipts      Receipt[]
 
   createdAt DateTime @default(now())
 }
@@ -70,6 +91,8 @@ model Vendor {
   user        User           @relation(fields: [userId], references: [id])
   products    Product[]
   reviews     Review[]
+  materials   Material[]
+  commissionLogs CommissionLog[]
 
   createdAt   DateTime       @default(now())
 }
@@ -114,6 +137,8 @@ model Order {
   event       Event       @relation(fields: [eventId], references: [id])
   items       OrderItem[]
   payment     Payment?
+  receipt     Receipt?
+  commissionLogs CommissionLog[]
 
   createdAt   DateTime    @default(now())
 }
@@ -129,6 +154,7 @@ model OrderItem {
 
   order    Order    @relation(fields: [orderId], references: [id])
   product  Product  @relation(fields: [productId], references: [id])
+  commissionLog CommissionLog?
 }
 model Payment {
   id        String        @id @default(uuid())
@@ -162,3 +188,65 @@ model Availability {
   product   Product  @relation(fields: [productId], references: [id])
 }
 
+model Material {
+  id          String   @id @default(uuid())
+  vendorId    String
+  name        String
+  description String?
+  imageUrl    String?
+  size        String?
+  colour      String?
+  options     String?
+  quantity    Float
+  unit        String
+  price       Float
+  category    String
+  createdAt   DateTime @default(now())
+
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  data      Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Receipt {
+  id          String   @id @default(uuid())
+  orderId     String   @unique
+  userId      String
+  totalAmount Float
+  items       Json
+  createdAt   DateTime @default(now())
+
+  order       Order    @relation(fields: [orderId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model CommissionLog {
+  id               String           @id @default(uuid())
+  orderId          String
+  orderItemId      String           @unique
+  vendorId         String
+  grossAmount      Float
+  commissionAmount Float
+  amount           Float
+  status           CommissionStatus @default(PENDING_PAYOUT)
+  paidAt           DateTime?
+  createdAt        DateTime         @default(now())
+
+  order            Order            @relation(fields: [orderId], references: [id])
+  orderItem        OrderItem        @relation(fields: [orderItemId], references: [id])
+  vendor           Vendor           @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, status])
+  @@index([orderId])
+}

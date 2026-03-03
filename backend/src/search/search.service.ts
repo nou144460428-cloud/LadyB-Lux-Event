@@ -1,22 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
+import { createPrismaClient } from '../prisma/prisma-client-options';
+import { ProductType, VendorCategory } from '@prisma/client';
 
 @Injectable()
 export class SearchService {
-  private prisma: any = new (PrismaClient as any)();
+  private prisma: any = createPrismaClient() as any;
 
   async searchProducts(
     query?: string,
-    type?: string,
+    type?: ProductType,
     minPrice?: number,
     maxPrice?: number,
-    category?: string,
+    category?: VendorCategory,
     vendorId?: string,
   ) {
     return this.prisma.product.findMany({
       where: {
         AND: [
-          query ? { OR: [{ name: { contains: query, mode: 'insensitive' } }, { description: { contains: query, mode: 'insensitive' } }] } : {},
+          query
+            ? {
+                OR: [
+                  { name: { contains: query, mode: 'insensitive' } },
+                  { description: { contains: query, mode: 'insensitive' } },
+                ],
+              }
+            : {},
           type ? { type } : {},
           minPrice !== undefined ? { price: { gte: minPrice } } : {},
           maxPrice !== undefined ? { price: { lte: maxPrice } } : {},
@@ -31,26 +39,33 @@ export class SearchService {
 
   async searchVendors(
     query?: string,
-    category?: string,
+    category?: VendorCategory,
     verifiedOnly = false,
   ) {
     return this.prisma.vendor.findMany({
       where: {
         AND: [
-          query ? { OR: [{ businessName: { contains: query, mode: 'insensitive' } }, { location: { contains: query, mode: 'insensitive' } }] } : {},
+          query
+            ? {
+                OR: [
+                  { businessName: { contains: query, mode: 'insensitive' } },
+                  { location: { contains: query, mode: 'insensitive' } },
+                ],
+              }
+            : {},
           category ? { category } : {},
           verifiedOnly ? { verified: true } : {},
         ],
       },
-      include: { products: true, _count: { select: { products: true, reviews: true } } },
+      include: {
+        products: true,
+        _count: { select: { products: true, reviews: true } },
+      },
       take: 50,
     });
   }
 
-  async searchEvents(
-    query?: string,
-    userId?: string,
-  ) {
+  async searchEvents(query?: string, userId?: string) {
     return this.prisma.event.findMany({
       where: {
         AND: [
@@ -63,10 +78,7 @@ export class SearchService {
     });
   }
 
-  async advancedSearch(
-    type: 'products' | 'vendors' | 'events',
-    filters: any,
-  ) {
+  async advancedSearch(type: 'products' | 'vendors' | 'events', filters: any) {
     if (type === 'products') {
       return this.searchProducts(
         filters.query,
@@ -77,7 +89,11 @@ export class SearchService {
         filters.vendorId,
       );
     } else if (type === 'vendors') {
-      return this.searchVendors(filters.query, filters.category, filters.verifiedOnly);
+      return this.searchVendors(
+        filters.query,
+        filters.category,
+        filters.verifiedOnly,
+      );
     } else {
       return this.searchEvents(filters.query, filters.userId);
     }

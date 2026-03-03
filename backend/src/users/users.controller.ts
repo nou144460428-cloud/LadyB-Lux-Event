@@ -1,9 +1,17 @@
-import { Controller, Get, Param, UseGuards, Req, Patch, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  UseGuards,
+  Req,
+  Patch,
+  Body,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
-import { Role } from '../../generated/prisma/enums';
+import { Role } from '@prisma/client';
 
 @Controller('users')
 export class UsersController {
@@ -26,6 +34,6 @@ export class UsersController {
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(Role.ADMIN)
   async updateRole(@Param('id') id: string, @Body() body: { role: Role }) {
-    return this.usersService.updateRole(id, body.role as unknown as string);
+    return this.usersService.updateRole(id, body.role);
   }
 }

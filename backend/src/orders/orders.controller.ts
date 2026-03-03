@@ -15,11 +15,12 @@ import { CreateOrderDto } from './create-order.dto';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
-import { PrismaClient } from '../../generated/prisma/client';
+import { createPrismaClient } from '../prisma/prisma-client-options';
+import { OrderStatus } from '@prisma/client';
 
 @Controller('orders')
 export class OrdersController {
-  private prisma: any = new (PrismaClient as any)();
+  private prisma: any = createPrismaClient() as any;
 
   constructor(private ordersService: OrdersService) {}
 
@@ -65,9 +66,10 @@ export class OrdersController {
     @Query('status') status: string,
     @Req() req: any,
   ) {
+    const normalizedStatus = status as OrderStatus;
     return this.ordersService.updateOrderStatus(
       orderId,
-      status,
+      normalizedStatus,
       req.user.id,
       req.user.role,
     );
@@ -76,16 +78,12 @@ export class OrdersController {
   // C8: Mark order as IN_PROGRESS (vendor endpoint)
   @Patch(':id/in-progress')
   @UseGuards(JwtGuard)
-  async markInProgress(
-    @Param('id') orderId: string,
-    @Req() req: any,
-  ) {
+  async markInProgress(@Param('id') orderId: string, @Req() req: any) {
     return this.ordersService.updateOrderStatus(
       orderId,
-      'IN_PROGRESS',
+      OrderStatus.IN_PROGRESS,
       req.user.id,
       req.user.role,
     );
   }
 }
-

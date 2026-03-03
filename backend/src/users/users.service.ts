@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
+import { createPrismaClient } from '../prisma/prisma-client-options';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  private prisma: any = new (PrismaClient as any)();
+  private prisma: any = createPrismaClient() as any;
 
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
@@ -15,7 +16,7 @@ export class UsersService {
     return this.prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
-  async updateRole(id: string, role: string) {
+  async updateRole(id: string, role: Role) {
     return this.prisma.user.update({ where: { id }, data: { role } });
   }
 }

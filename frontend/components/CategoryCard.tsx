@@ -1,20 +1,26 @@
 import Link from 'next/link';
+import React from 'react';
 
 interface CategoryCardProps {
   title: string;
-  icon?: string;
+  icon: string;
 }
 
-export default function CategoryCard({ title, icon = '🎯' }: CategoryCardProps) {
-  const categorySlug = title.toLowerCase().replace(/\s+/g, '-');
+const CategoryCard = ({ title, icon }: CategoryCardProps) => {
+  // Simple slugification for URL generation
+  const slug = title
+    .toLowerCase()
+    .replace(/ & /g, '-') // Handle ampersands
+    .replace(/\s+/g, '-'); // Replace spaces with hyphens
 
   return (
-    <Link href={`/vendors/${categorySlug}`}>
-      <div className="card cursor-pointer text-center">
-        <div className="text-4xl mb-2">{icon}</div>
-        <h3 className="font-semibold text-lg">{title}</h3>
-        <p className="text-gray-500 text-sm mt-1">Browse vendors</p>
-      </div>
+    <Link href={`/vendors/${slug}`}>
+      <a className="block p-6 text-center bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 hover:shadow-lg transition-all">
+        <div className="text-4xl mb-4">{icon}</div>
+        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+      </a>
     </Link>
   );
-}
+};
+
+export default CategoryCard;

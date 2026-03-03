@@ -17,7 +17,11 @@ export class EmailService {
     });
   }
 
-  async sendOrderConfirmation(email: string, orderId: string, totalAmount: number) {
+  async sendOrderConfirmation(
+    email: string,
+    orderId: string,
+    totalAmount: number,
+  ) {
     const html = `
       <h2>Order Confirmed!</h2>
       <p>Your order <strong>#${orderId}</strong> has been confirmed.</p>
@@ -73,6 +77,26 @@ export class EmailService {
     `;
 
     return this.sendMail(email, 'Vendor Account Approved', html);
+  }
+
+  async sendVendorNewOrder(
+    email: string,
+    businessName: string,
+    orderId: string,
+    eventTitle: string,
+    totalAmount: number,
+  ) {
+    const html = `
+      <h2>New Order Received</h2>
+      <p>Hello <strong>${businessName}</strong>,</p>
+      <p>You have a new order to fulfill.</p>
+      <p><strong>Order ID:</strong> ${orderId}</p>
+      <p><strong>Event:</strong> ${eventTitle}</p>
+      <p><strong>Order Value:</strong> ₦${totalAmount.toLocaleString()}</p>
+      <p><a href="${process.env.FRONTEND_URL}/dashboard/vendor">View in Vendor Dashboard</a></p>
+    `;
+
+    return this.sendMail(email, 'New Order Received', html);
   }
 
   private async sendMail(to: string, subject: string, html: string) {

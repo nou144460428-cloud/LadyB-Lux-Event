@@ -1,0 +1,28 @@
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AccountType') THEN
+    ALTER TYPE "AccountType" ADD VALUE IF NOT EXISTS 'CUSTOMER';
+    ALTER TYPE "AccountType" ADD VALUE IF NOT EXISTS 'DECORATOR';
+    ALTER TYPE "AccountType" ADD VALUE IF NOT EXISTS 'VENDOR';
+    ALTER TYPE "AccountType" ADD VALUE IF NOT EXISTS 'STAFF';
+    ALTER TYPE "AccountType" ADD VALUE IF NOT EXISTS 'ADMIN';
+  ELSE
+    CREATE TYPE "AccountType" AS ENUM ('CUSTOMER', 'DECORATOR', 'VENDOR', 'STAFF', 'ADMIN');
+  END IF;
+END $$;
+
+ALTER TABLE "User"
+  ADD COLUMN IF NOT EXISTS "accountType" "AccountType" NOT NULL DEFAULT 'CUSTOMER',
+  ADD COLUMN IF NOT EXISTS "phone" TEXT,
+  ADD COLUMN IF NOT EXISTS "nextOfKinName" TEXT,
+  ADD COLUMN IF NOT EXISTS "nextOfKinPhone" TEXT,
+  ADD COLUMN IF NOT EXISTS "nextOfKinRelationship" TEXT;
+
+UPDATE "User"
+SET "accountType" = CASE
+  WHEN role = 'ADMIN' THEN 'ADMIN'::"AccountType"
+  WHEN role = 'STAFF' THEN 'STAFF'::"AccountType"
+  WHEN role = 'VENDOR' THEN 'VENDOR'::"AccountType"
+  ELSE 'CUSTOMER'::"AccountType"
+END
+WHERE "accountType" IS NULL;

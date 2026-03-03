@@ -1,12 +1,22 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
-import { Role } from '../../generated/prisma/enums';
+import { Role } from '@prisma/client';
 
 @Controller('inventory')
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, RolesGuard)
 export class InventoryController {
   constructor(private inventoryService: InventoryService) {}
 

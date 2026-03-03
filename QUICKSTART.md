@@ -26,7 +26,7 @@ npm install
 createdb ladyb_lux_event
 
 # Update DATABASE_URL in .env
-DATABASE_URL="postgresql://user:password@localhost:5432/ladyb_lux_event"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ladyb_lux_event"
 
 # Apply migrations
 npx prisma migrate deploy
@@ -48,6 +48,12 @@ DATABASE_URL=postgresql://...
 JWT_SECRET=your_secret_key_here
 PAYSTACK_SECRET=sk_test_xxxx  # Use test key for development
 PAYSTACK_PUBLIC_KEY=pk_test_xxxx
+MONNIFY_BASE_URL=https://sandbox.monnify.com
+MONNIFY_API_KEY=mk_test_xxxx
+MONNIFY_SECRET_KEY=msk_test_xxxx
+MONNIFY_CONTRACT_CODE=1234567890
+MONNIFY_WEBHOOK_SECRET=monnify_webhook_secret
+ADMIN_BOOTSTRAP_SECRET=bootstrap_secret_once
 FRONTEND_URL=http://localhost:3000
 PORT=3001
 NODE_ENV=development
@@ -134,7 +140,14 @@ Category: SMALL_CHOPS
 
 ### Admin (TBD)
 ```
-Need to manually update user.role to ADMIN in database
+Use one-time bootstrap:
+POST /auth/admin/bootstrap
+{
+  "name": "Owner",
+  "email": "admin@yourapp.com",
+  "password": "securepass",
+  "bootstrapSecret": "ADMIN_BOOTSTRAP_SECRET value"
+}
 ```
 
 ---
@@ -200,6 +213,54 @@ Check API client interceptor in lib/api.ts
 - **Detailed Setup**: See [README.md](../README.md)
 - **Deployment**: See [DEPLOYMENT.md](../DEPLOYMENT.md)
 - **Implementation**: See [IMPLEMENTATION.md](../IMPLEMENTATION.md)
+
+---
+
+## 💳 Paystack Integration Summary
+
+### Keys to obtain
+1. Sign up at `https://paystack.com`
+2. Go to `Settings -> API Keys`
+3. Copy Secret Key (`sk_live_...`)
+4. Copy Public Key (`pk_live_...`)
+
+### Webhook URL to set in Paystack Dashboard
+```text
+POST https://your-backend.com/payments/webhook/paystack
+```
+
+### Testing Paystack locally
+Use Paystack test keys (`sk_test_...`, `pk_test_...`)
+
+### Monnify setup
+1. Create a Monnify merchant account.
+2. Copy `API KEY`, `SECRET KEY`, and `CONTRACT CODE`.
+3. Use sandbox base URL in development: `https://sandbox.monnify.com`.
+4. Configure redirect to:
+```text
+https://your-frontend.com/checkout/success
+```
+5. Configure webhook to:
+```text
+POST https://your-backend.com/payments/webhook/monnify
+```
+
+---
+
+## 📈 Monitoring & Analytics
+
+### Option 1: Sentry (Error Tracking)
+```typescript
+import * as Sentry from '@sentry/node';
+
+Sentry.init({ dsn: process.env.SENTRY_DSN });
+```
+
+### Option 2: LogRocket (Session Replay)
+Frontend only, great for debugging.
+
+### Option 3: DataDog
+Enterprise choice, costs $$$.
 
 ---
 

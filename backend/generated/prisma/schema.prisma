@@ -1,0 +1,261 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  VENDOR
+  STAFF
+  ADMIN
+}
+
+enum AccountType {
+  CUSTOMER
+  DECORATOR
+  VENDOR
+  STAFF
+  ADMIN
+}
+
+enum VendorCategory {
+  PLANNER
+  DECORATION
+  CAKE
+  SMALL_CHOPS
+}
+
+enum ProductType {
+  SERVICE
+  RENTAL
+  FOOD
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+}
+
+enum CommissionStatus {
+  PENDING_PAYOUT
+  PAID_OUT
+  FAILED
+}
+
+model User {
+  id                    String      @id @default(uuid())
+  name                  String
+  email                 String      @unique
+  password              String
+  role                  Role        @default(CUSTOMER)
+  accountType           AccountType @default(CUSTOMER)
+  phone                 String?
+  nextOfKinName         String?
+  nextOfKinPhone        String?
+  nextOfKinRelationship String?
+
+  vendor        Vendor?
+  events        Event[]
+  orders        Order[]
+  reviews       Review[]
+  notifications Notification[]
+  receipts      Receipt[]
+
+  createdAt DateTime @default(now())
+}
+
+model Vendor {
+  id           String         @id @default(uuid())
+  userId       String         @unique
+  category     VendorCategory
+  businessName String
+  location     String
+  verified     Boolean        @default(false)
+
+  user           User            @relation(fields: [userId], references: [id])
+  products       Product[]
+  reviews        Review[]
+  materials      Material[]
+  commissionLogs CommissionLog[]
+
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id            String      @id @default(uuid())
+  vendorId      String
+  name          String
+  description   String
+  type          ProductType
+  price         Float
+  quantity      Int? // for rentals & food
+  dailyCapacity Int? // for food - max orders per day
+  imageUrl      String?
+
+  vendor         Vendor         @relation(fields: [vendorId], references: [id])
+  orderItems     OrderItem[]
+  availabilities Availability[]
+
+  createdAt DateTime @default(now())
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  eventDate DateTime
+  location  String
+
+  user   User    @relation(fields: [userId], references: [id])
+  orders Order[]
+
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  userId      String
+  eventId     String
+  totalAmount Float
+  status      OrderStatus @default(PENDING)
+
+  user           User            @relation(fields: [userId], references: [id])
+  event          Event           @relation(fields: [eventId], references: [id])
+  items          OrderItem[]
+  payment        Payment?
+  receipt        Receipt?
+  commissionLogs CommissionLog[]
+
+  createdAt DateTime @default(now())
+}
+
+model OrderItem {
+  id           String    @id @default(uuid())
+  orderId      String
+  productId    String
+  quantity     Int
+  price        Float
+  startDate    DateTime? // for rentals & services
+  endDate      DateTime? // for rentals & services
+  deliveryDate DateTime? // for food items
+
+  order         Order          @relation(fields: [orderId], references: [id])
+  product       Product        @relation(fields: [productId], references: [id])
+  commissionLog CommissionLog?
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  orderId   String        @unique
+  provider  String
+  status    PaymentStatus
+  reference String?
+
+  order     Order    @relation(fields: [orderId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id       String  @id @default(uuid())
+  vendorId String
+  userId   String
+  rating   Int
+  comment  String?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Availability {
+  id        String   @id @default(uuid())
+  productId String
+  startDate DateTime
+  endDate   DateTime
+  quantity  Int
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Material {
+  id          String   @id @default(uuid())
+  vendorId    String
+  name        String
+  description String?
+  imageUrl    String?
+  size        String?
+  colour      String?
+  options     String?
+  quantity    Float
+  unit        String
+  price       Float
+  category    String
+  createdAt   DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  data      Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Receipt {
+  id          String   @id @default(uuid())
+  orderId     String   @unique
+  userId      String
+  totalAmount Float
+  items       Json
+  createdAt   DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+model CommissionLog {
+  id               String           @id @default(uuid())
+  orderId          String
+  orderItemId      String           @unique
+  vendorId         String
+  grossAmount      Float
+  commissionAmount Float
+  amount           Float
+  status           CommissionStatus @default(PENDING_PAYOUT)
+  paidAt           DateTime?
+  createdAt        DateTime         @default(now())
+
+  order     Order     @relation(fields: [orderId], references: [id])
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+  vendor    Vendor    @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, status])
+  @@index([orderId])
+}

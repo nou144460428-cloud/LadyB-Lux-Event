@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
+import { createPrismaClient } from '../prisma/prisma-client-options';
 
 @Injectable()
 export class VendorsService {
-  private prisma: any = new (PrismaClient as any)();
+  private prisma: any = createPrismaClient() as any;
 
   async createVendor(userId: string, data: any) {
     return this.prisma.vendor.create({
@@ -27,6 +27,9 @@ export class VendorsService {
   }
 
   async verifyVendor(id: string) {
-    return this.prisma.vendor.update({ where: { id }, data: { verified: true } });
+    return this.prisma.vendor.update({
+      where: { id },
+      data: { verified: true },
+    });
   }
 }

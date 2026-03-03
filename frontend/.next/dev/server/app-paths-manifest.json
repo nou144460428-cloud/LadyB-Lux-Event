@@ -1,0 +1,15 @@
+{
+  "/auth/admin-login/page": "app/auth/admin-login/page.js",
+  "/auth/admin-register/page": "app/auth/admin-register/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/auth/register/page": "app/auth/register/page.js",
+  "/cart/page": "app/cart/page.js",
+  "/checkout/page": "app/checkout/page.js",
+  "/dashboard/admin/page": "app/dashboard/admin/page.js",
+  "/event/create/page": "app/event/create/page.js",
+  "/page": "app/page.js",
+  "/rentals/cart/page": "app/rentals/cart/page.js",
+  "/rentals/checkout/page": "app/rentals/checkout/page.js",
+  "/samples/page": "app/samples/page.js",
+  "/vendors/[category]/page": "app/vendors/[category]/page.js"
+}

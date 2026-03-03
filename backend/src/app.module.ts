@@ -16,6 +16,8 @@ import { EmailModule } from './email/email.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SearchModule } from './search/search.module';
+import { EventMediaModule } from './event-media/event-media.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { SearchModule } from './search/search.module';
     ReviewsModule,
     AnalyticsModule,
     SearchModule,
+    EventMediaModule,
+    WhatsappModule,
   ],
   controllers: [AppController],
   providers: [AppService],

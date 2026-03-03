@@ -3,23 +3,36 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { setAuthData } from '@/lib/auth';
 import { useCart } from '@/store/cart';
+import { useRentalCart } from '@/store/rentalCart';
 
 export default function PaymentSuccess() {
   const router = useRouter();
   const { clearCart } = useCart();
+  const { clearCart: clearRentalCart } = useRentalCart();
 
   useEffect(() => {
     const handlePaymentSuccess = async () => {
       try {
         const params = new URLSearchParams(window.location.search);
-        const reference = params.get('reference');
+        const reference =
+          params.get('reference') ||
+          params.get('paymentReference') ||
+          params.get('trxref');
+        const providerParam = params.get('provider');
+        const provider =
+          providerParam === 'monnify' ? 'monnify' : 'paystack';
 
         if (reference) {
           // Verify payment with backend
-          await api.post('/payments/verify', { reference });
+          await api.post('/payments/verify', { reference, provider });
           clearCart();
+          const pendingRentalPayment = localStorage.getItem('pending-rental-payment');
+          if (pendingRentalPayment === '1') {
+            clearRentalCart();
+            localStorage.removeItem('pending-rental-payment');
+            localStorage.removeItem('pending-rental-request-id');
+          }
           
           // Redirect to dashboard after 3 seconds
           setTimeout(() => {
@@ -33,7 +46,7 @@ export default function PaymentSuccess() {
     };
 
     handlePaymentSuccess();
-  }, [router, clearCart]);
+  }, [router, clearCart, clearRentalCart]);
 
   return (
     <div className="max-w-md mx-auto py-20 text-center">

@@ -1,12 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
+import { createPrismaClient } from '../prisma/prisma-client-options';
 
 @Injectable()
 export class AnalyticsService {
-  private prisma: any = new (PrismaClient as any)();
+  private prisma: any = createPrismaClient() as any;
 
-  async getDashboardMetrics(vendorId?: string, startDate?: Date, endDate?: Date) {
-    const dateFilter = startDate || endDate ? { createdAt: { ...(startDate && { gte: startDate }), ...(endDate && { lte: endDate }) } } : {};
+  async getDashboardMetrics(
+    vendorId?: string,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
+    const dateFilter =
+      startDate || endDate
+        ? {
+            createdAt: {
+              ...(startDate && { gte: startDate }),
+              ...(endDate && { lte: endDate }),
+            },
+          }
+        : {};
 
     const totalOrders = await this.prisma.order.count({
       where: vendorId
@@ -37,7 +49,8 @@ export class AnalyticsService {
       totalOrders,
       totalRevenue: totalRevenue._sum.totalAmount || 0,
       totalCustomers,
-      conversionRate: totalOrders > 0 ? ((paidOrders / totalOrders) * 100).toFixed(2) : 0,
+      conversionRate:
+        totalOrders > 0 ? ((paidOrders / totalOrders) * 100).toFixed(2) : 0,
       paidOrders,
       pendingOrders: totalOrders - paidOrders,
     };
@@ -55,9 +68,10 @@ export class AnalyticsService {
       take: limit,
     });
 
-    return vendors.map(v => {
+    return vendors.map((v) => {
       const totalRevenue = v.products.reduce(
-        (sum, p) => sum + p.orderItems.reduce((s, oi) => s + oi.price * oi.quantity, 0),
+        (sum, p) =>
+          sum + p.orderItems.reduce((s, oi) => s + oi.price * oi.quantity, 0),
         0,
       );
       return { ...v, totalRevenue, productCount: v.products.length };
@@ -77,7 +91,10 @@ export class AnalyticsService {
       return acc;
     }, {});
 
-    return Object.entries(grouped).map(([date, count]) => ({ date, orders: count }));
+    return Object.entries(grouped).map(([date, count]) => ({
+      date,
+      orders: count,
+    }));
   }
 
   async getProductPopularity(limit = 10) {
@@ -87,7 +104,7 @@ export class AnalyticsService {
     });
 
     return products
-      .map(p => ({ ...p, orderCount: p.orderItems.length }))
+      .map((p) => ({ ...p, orderCount: p.orderItems.length }))
       .sort((a, b) => b.orderCount - a.orderCount);
   }
 
@@ -101,6 +118,9 @@ export class AnalyticsService {
       return acc;
     }, {});
 
-    return Object.entries(grouped).map(([category, count]) => ({ category, vendorCount: count }));
+    return Object.entries(grouped).map(([category, count]) => ({
+      category,
+      vendorCount: count,
+    }));
   }
 }

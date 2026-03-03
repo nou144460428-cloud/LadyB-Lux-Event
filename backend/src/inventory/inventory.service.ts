@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
+import { Injectable } from '@nestjs/common';
+import { createPrismaClient } from '../prisma/prisma-client-options';
 
 @Injectable()
 export class InventoryService {
-  private prisma: any = new (PrismaClient as any)();
+  private prisma: any = createPrismaClient() as any;
 
   async addMaterial(vendorId: string, data: any) {
     return this.prisma.material.create({
@@ -11,6 +11,10 @@ export class InventoryService {
         vendorId,
         name: data.name,
         description: data.description,
+        imageUrl: data.imageUrl || null,
+        size: data.size || null,
+        colour: data.colour || null,
+        options: data.options || null,
         quantity: data.quantity,
         unit: data.unit,
         price: data.price,

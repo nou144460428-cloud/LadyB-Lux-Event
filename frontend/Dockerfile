@@ -1,11 +1,11 @@
-FROM node:18 as builder
+FROM node:22 as builder
 WORKDIR /app
 COPY package.json .
 RUN npm install
 COPY . .
 RUN npm run build
 
-FROM node:18
+FROM node:22
 WORKDIR /app
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package.json .

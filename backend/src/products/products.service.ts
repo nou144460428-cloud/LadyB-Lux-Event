@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
+import { createPrismaClient } from '../prisma/prisma-client-options';
 
 @Injectable()
 export class ProductsService {
-  private prisma: any = new (PrismaClient as any)();
+  private prisma: any = createPrismaClient() as any;
 
   async checkAvailability(
     productId: string,
@@ -28,7 +28,10 @@ export class ProductsService {
     });
 
     // Sum up booked quantity
-    const bookedQty = bookings.reduce((sum: number, b: any) => sum + b.quantity, 0);
+    const bookedQty = bookings.reduce(
+      (sum: number, b: any) => sum + b.quantity,
+      0,
+    );
 
     // Get the product to check total quantity
     const product = await this.prisma.product.findUnique({
@@ -68,9 +71,16 @@ export class ProductsService {
     qty: number,
   ) {
     // First check if availability exists
-    const isAvailable = await this.checkAvailability(productId, startDate, endDate, qty);
+    const isAvailable = await this.checkAvailability(
+      productId,
+      startDate,
+      endDate,
+      qty,
+    );
     if (!isAvailable) {
-      throw new Error('Product not available for the requested dates and quantity');
+      throw new Error(
+        'Product not available for the requested dates and quantity',
+      );
     }
 
     // Create availability record
